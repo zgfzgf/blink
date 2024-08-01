@@ -1,0 +1,54 @@
+import * as anchor from "@coral-xyz/anchor";
+import { Program } from "@coral-xyz/anchor";
+import { Blink } from "../target/types/blink";
+import { type TestValues, createValues } from './utils';
+
+describe("config", () => {
+    // Configure the client to use the local cluster.
+    anchor.setProvider(anchor.AnchorProvider.env());
+  
+    const program = anchor.workspace.Blink as Program<Blink>;
+    const provider = program.provider as anchor.AnchorProvider;
+    const payer = provider.wallet as anchor.Wallet;
+  
+    let values: TestValues;
+    let index: number;
+    index = 3;
+    beforeEach(() => {
+        values = createValues(index, program.programId);
+    });
+  
+    it('Create config', async () => {
+      console.log(`Payer Address      : ${payer.publicKey}`);
+      console.log(`Program Address    : ${program.programId}`);
+      console.log(`Config Address     : ${values.config}`);
+      // Instruction Ix data
+      const info = {
+        pic: "pic",
+        content: "content",
+        option1: "option1",
+        option2: "option2",
+        option3: "option3",
+        option4: "option4",
+      };
+  
+      await program.methods
+        .createConfig(index,info.pic,info.content,info.option1,info.option2,info.option3,info.option4)
+        .accounts({
+          blink_config: values.config,
+          owner: "FDdjfxEvFjQhgnWbYQeo4GoHb7Kd4RcXVRbqpN4kBc9M",
+        })
+        .rpc();
+    });
+  
+    it("Read the new account's data", async () => {
+      
+      const configInfo = await program.account.blinkConfig.fetch(values.config);
+      console.log(`content     : ${configInfo.content}`);
+    });
+  
+    
+  
+    
+  
+  });
