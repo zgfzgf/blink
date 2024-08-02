@@ -27,7 +27,7 @@ pub fn claim(ctx: Context<Claim>) -> Result<()> {
 
     submit_state.claim = true;
 
-    let signer_seeds: [&[&[u8]]; 1] = [&[crate::AUTH_SEED.as_bytes(), &[ctx.bumps.authority]]];
+    let signer_seeds: [&[&[u8]]; 1] = [&[crate::AUTH_SEED.as_bytes(), &[blink_state.auth_bump]]];
 
     let transfer_accounts = TransferChecked {
         from: ctx.accounts.vault.to_account_info(),
@@ -54,7 +54,12 @@ pub struct Claim<'info> {
 
     #[account(
         mut,
-        constraint = submit_state.load()?.blink_state == blink_state.key()
+        seeds = [
+            SUBMIT_SEED.as_bytes(),
+            blink_state.key().as_ref(),
+            user.key().as_ref(),
+        ],
+        bump = blink_state.load()?.bump,
     )]
     pub submit_state: AccountLoader<'info, SubmitState>,
     pub blink_state: AccountLoader<'info, BlinkState>,
@@ -64,7 +69,7 @@ pub struct Claim<'info> {
         seeds = [
             crate::AUTH_SEED.as_bytes(),
         ],
-        bump,
+        bump = blink_state.load()?.auth_bump,
     )]
     pub authority: UncheckedAccount<'info>,
 

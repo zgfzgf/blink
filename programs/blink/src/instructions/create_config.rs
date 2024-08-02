@@ -15,7 +15,6 @@ pub fn create_config(
 ) -> Result<()> {
     let blink_config = ctx.accounts.blink_config.deref_mut();
     blink_config.admin = ctx.accounts.owner.key();
-    blink_config.bump = ctx.bumps.blink_config;
     blink_config.index = index;
     blink_config.pic = pic;
     blink_config.content = content;
@@ -23,6 +22,7 @@ pub fn create_config(
     blink_config.option2 = option2;
     blink_config.option3 = option3;
     blink_config.option4 = option4;
+    blink_config.bump = ctx.bumps.blink_config;
 
     Ok(())
 }

@@ -23,7 +23,6 @@ pub fn initialize(ctx: Context<Initialize>, amount: u64, answer: u8) -> Result<(
 
     let blink_state = &mut ctx.accounts.blink_state.load_init()?;
 
-    blink_state.auth_bump = ctx.bumps.blink_state;
     blink_state.blink_config = ctx.accounts.blink_config.key();
     blink_state.pool_creator = ctx.accounts.creator.key();
     blink_state.vault = ctx.accounts.vault.key();
@@ -34,6 +33,8 @@ pub fn initialize(ctx: Context<Initialize>, amount: u64, answer: u8) -> Result<(
     blink_state.rights = 0;
     blink_state.amount = amount;
     blink_state.reward = 0;
+    blink_state.auth_bump = ctx.bumps.authority;
+    blink_state.bump = ctx.bumps.blink_state;
 
     Ok(())
 }
@@ -52,7 +53,6 @@ pub struct Initialize<'info> {
         bump,
     )]
     pub authority: UncheckedAccount<'info>,
-
 
     pub blink_config: Box<Account<'info, BlinkConfig>>,
 
