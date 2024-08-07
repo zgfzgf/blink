@@ -65,7 +65,7 @@ pub struct Initialize<'info> {
         ],
         bump,
         payer = creator,
-        space = BlinkState::INIT_SPACE
+        space = ANCHOR_DISCRIMINATOR + BlinkState::INIT_SPACE
     )]
     pub blink_state: AccountLoader<'info, BlinkState>,
 
@@ -94,5 +94,4 @@ pub struct Initialize<'info> {
     pub token_program: Interface<'info, TokenInterface>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
-    pub rent: Sysvar<'info, Rent>,
 }

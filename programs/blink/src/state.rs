@@ -1,12 +1,13 @@
 use anchor_lang::prelude::*;
 
 pub const CONFIG_SEED: &str = "config_seed";
+pub const ANCHOR_DISCRIMINATOR: usize = 8;
 
 #[account]
 #[derive(InitSpace)] // automatically calculate the space required for the struct
 pub struct BlinkConfig {
-    pub index: u8,
-    pub admin: Pubkey,
+    pub index: u16,
+    pub owner: Pubkey,
     #[max_len(200)]
     pub pic: String, // 4 bytes + 200 bytes
 

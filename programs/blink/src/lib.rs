@@ -6,14 +6,9 @@ pub mod utils;
 use anchor_lang::prelude::*;
 use instructions::*;
 
-declare_id!("BAFSUnhrUETfEd8AitHGBgPxBaNrAvXyq9x184HKLuYp");
-
 pub const AUTH_SEED: &str = "auth_seed";
 
-pub mod admin {
-    use anchor_lang::prelude::declare_id;
-    declare_id!("FDdjfxEvFjQhgnWbYQeo4GoHb7Kd4RcXVRbqpN4kBc9M");
-}
+declare_id!("45wPxt3utVDUdsHzu6Wq2e65xKSgwq6r9JEdSq9heAfb");
 
 #[program]
 pub mod blink {
@@ -22,7 +17,7 @@ pub mod blink {
     #[allow(clippy::too_many_arguments)]
     pub fn create_config(
         ctx: Context<CreateBlinkConfig>,
-        index: u8,
+        index: u16,
         pic: String,
         content: String,
         option1: String,

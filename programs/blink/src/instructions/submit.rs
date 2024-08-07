@@ -34,12 +34,11 @@ pub struct Submit<'info> {
         ],
         bump,
         payer = user,
-        space = SubmitState::INIT_SPACE
+        space = ANCHOR_DISCRIMINATOR + SubmitState::INIT_SPACE
     )]
     pub submit_state: AccountLoader<'info, SubmitState>,
 
     #[account(mut)]
     pub blink_state: AccountLoader<'info, BlinkState>,
     pub system_program: Program<'info, System>,
-    pub rent: Sysvar<'info, Rent>,
 }

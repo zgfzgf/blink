@@ -1,11 +1,11 @@
-use crate::{error::ErrorCode, state::*};
+use crate::state::*;
 use anchor_lang::prelude::*;
 use std::ops::DerefMut;
 
 #[allow(clippy::too_many_arguments)]
 pub fn create_config(
     ctx: Context<CreateBlinkConfig>,
-    index: u8,
+    index: u16,
     pic: String,
     content: String,
     option1: String,
@@ -14,7 +14,7 @@ pub fn create_config(
     option4: String,
 ) -> Result<()> {
     let blink_config = ctx.accounts.blink_config.deref_mut();
-    blink_config.admin = ctx.accounts.owner.key();
+    blink_config.owner = ctx.accounts.owner.key();
     blink_config.index = index;
     blink_config.pic = pic;
     blink_config.content = content;
@@ -28,23 +28,20 @@ pub fn create_config(
 }
 
 #[derive(Accounts)]
-#[instruction(index: u8)]
+#[instruction(index: u16)]
 pub struct CreateBlinkConfig<'info> {
-    #[account(
-        mut,
-        address = crate::admin::id() @ ErrorCode::InvalidOwner
-    )]
+    #[account(mut)]
     pub owner: Signer<'info>,
 
     #[account(
         init,
         seeds = [
             CONFIG_SEED.as_bytes(),
-            &index.to_be_bytes()
+            &index.to_le_bytes().as_ref()
         ],
         bump,
         payer = owner,
-        space = BlinkConfig::INIT_SPACE
+        space = ANCHOR_DISCRIMINATOR + BlinkConfig::INIT_SPACE
     )]
     pub blink_config: Account<'info, BlinkConfig>,
 
