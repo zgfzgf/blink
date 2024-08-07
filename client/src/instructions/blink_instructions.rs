@@ -51,12 +51,18 @@ pub fn create_config_instr(
     Ok(instructions)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn initialize_instr(
     config: &ClientConfig,
     index: u16,
     token_mint: Pubkey,
     amount: u64,
-    answer: u8,
+    pic: String,
+    content: String,
+    option1: String,
+    option2: String,
+    option3: String,
+    option4: String,
 ) -> Result<Vec<Instruction>> {
     let creator = read_keypair_file(&config.creator_path)?;
     let payer = read_keypair_file(&config.creator_path)?;
@@ -72,11 +78,7 @@ pub fn initialize_instr(
     let (authority, __bump) = Pubkey::find_program_address(&[AUTH_SEED.as_bytes()], &program.id());
 
     let (blink_state_key, _bump) = Pubkey::find_program_address(
-        &[
-            BLINK_SEED.as_bytes(),
-            blink_config_key.to_bytes().as_ref(),
-            token_mint.to_bytes().as_ref(),
-        ],
+        &[BLINK_SEED.as_bytes(), &index.to_le_bytes()[..]],
         &program.id(),
     );
 
@@ -98,16 +100,21 @@ pub fn initialize_instr(
             associated_token_program: spl_associated::id(),
             system_program: system_program::id(),
         })
-        .args(blink_instructions::Initialize { amount, answer })
+        .args(blink_instructions::Initialize {
+            index,
+            amount,
+            pic,
+            content,
+            option1,
+            option2,
+            option3,
+            option4,
+        })
         .instructions()?;
     Ok(instructions)
 }
 
-pub fn submit_instr(
-    config: &ClientConfig,
-    blink_state: Pubkey,
-    answer: u8,
-) -> Result<Vec<Instruction>> {
+pub fn submit_instr(config: &ClientConfig, index: u16, answer: u8) -> Result<Vec<Instruction>> {
     let user = read_keypair_file(&config.user_path)?;
     let payer = read_keypair_file(&config.creator_path)?;
     let url = Cluster::Custom(config.http_url.clone(), config.ws_url.clone());
@@ -115,10 +122,15 @@ pub fn submit_instr(
     let client = Client::new(url, Rc::new(payer));
     let program = client.program(config.blink_program)?;
 
+    let (blink_state_key, _bump) = Pubkey::find_program_address(
+        &[BLINK_SEED.as_bytes(), &index.to_le_bytes()[..]],
+        &program.id(),
+    );
+
     let (submit_state_key, _bump) = Pubkey::find_program_address(
         &[
             SUBMIT_SEED.as_bytes(),
-            blink_state.to_bytes().as_ref(),
+            &index.to_le_bytes()[..],
             user.pubkey().to_bytes().as_ref(),
         ],
         &program.id(),
@@ -129,15 +141,15 @@ pub fn submit_instr(
         .accounts(blink_accounts::Submit {
             user: user.pubkey(),
             submit_state: submit_state_key,
-            blink_state,
+            blink_state: blink_state_key,
             system_program: system_program::id(),
         })
-        .args(blink_instructions::Submit { answer })
+        .args(blink_instructions::Submit { index, answer })
         .instructions()?;
     Ok(instructions)
 }
 
-pub fn close_instr(config: &ClientConfig, blink_state: Pubkey) -> Result<Vec<Instruction>> {
+pub fn close_instr(config: &ClientConfig, index: u16, answer: u8) -> Result<Vec<Instruction>> {
     let creator = read_keypair_file(&config.creator_path)?;
     let payer = read_keypair_file(&config.creator_path)?;
     let url = Cluster::Custom(config.http_url.clone(), config.ws_url.clone());
@@ -145,18 +157,23 @@ pub fn close_instr(config: &ClientConfig, blink_state: Pubkey) -> Result<Vec<Ins
     let client = Client::new(url, Rc::new(payer));
     let program = client.program(config.blink_program)?;
 
+    let (blink_state_key, _bump) = Pubkey::find_program_address(
+        &[BLINK_SEED.as_bytes(), &index.to_le_bytes()[..]],
+        &program.id(),
+    );
+
     let instructions = program
         .request()
         .accounts(blink_accounts::Close {
             owner: creator.pubkey(),
-            blink_state,
+            blink_state: blink_state_key,
         })
-        .args(blink_instructions::Close {})
+        .args(blink_instructions::Close { index, answer })
         .instructions()?;
     Ok(instructions)
 }
 
-pub fn claim_instr(config: &ClientConfig, submit_key: Pubkey) -> Result<Vec<Instruction>> {
+pub fn claim_instr(config: &ClientConfig, index: u16) -> Result<Vec<Instruction>> {
     let user = read_keypair_file(&config.user_path)?;
     let payer = read_keypair_file(&config.creator_path)?;
     let url = Cluster::Custom(config.http_url.clone(), config.ws_url.clone());
@@ -164,9 +181,20 @@ pub fn claim_instr(config: &ClientConfig, submit_key: Pubkey) -> Result<Vec<Inst
     let client = Client::new(url, Rc::new(payer));
     let program = client.program(config.blink_program)?;
 
-    let sumbit_state: blink::state::SubmitState = program.account(submit_key)?;
-    let blink_key = sumbit_state.blink_state;
-    let blink_state: blink::state::BlinkState = program.account(blink_key)?;
+    let (submit_state_key, _bump) = Pubkey::find_program_address(
+        &[
+            SUBMIT_SEED.as_bytes(),
+            &index.to_le_bytes()[..],
+            user.pubkey().to_bytes().as_ref(),
+        ],
+        &program.id(),
+    );
+
+    let (blink_state_key, _bump) = Pubkey::find_program_address(
+        &[BLINK_SEED.as_bytes(), &index.to_le_bytes()[..]],
+        &program.id(),
+    );
+    let blink_state: blink::state::BlinkState = program.account(blink_state_key)?;
     let (authority, __bump) = Pubkey::find_program_address(&[AUTH_SEED.as_bytes()], &program.id());
     let user_token =
         spl_associated::get_associated_token_address(&user.pubkey(), &blink_state.token_mint);
@@ -175,8 +203,8 @@ pub fn claim_instr(config: &ClientConfig, submit_key: Pubkey) -> Result<Vec<Inst
         .request()
         .accounts(blink_accounts::Claim {
             user: user.pubkey(),
-            submit_state: submit_key,
-            blink_state: blink_key,
+            submit_state: submit_state_key,
+            blink_state: blink_state_key,
             authority,
             user_account: user_token,
             vault: blink_state.vault,
@@ -185,7 +213,7 @@ pub fn claim_instr(config: &ClientConfig, submit_key: Pubkey) -> Result<Vec<Inst
             associated_token_program: spl_associated::id(),
             system_program: system_program::id(),
         })
-        .args(blink_instructions::Claim {})
+        .args(blink_instructions::Claim { index })
         .instructions()?;
     Ok(instructions)
 }

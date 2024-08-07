@@ -10,6 +10,8 @@ pub enum ErrorCode {
 
     #[msg("Invalid Claim")]
     InvalidClaim,
+    #[msg("Invalid Index")]
+    InvalidIndex,
     #[msg("Reward Zero")]
     RewardZero,
     #[msg("Claim Already")]

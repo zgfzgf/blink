@@ -28,19 +28,32 @@ pub mod blink {
         instructions::create_config(ctx, index, pic, content, option1, option2, option3, option4)
     }
 
-    pub fn initialize(ctx: Context<Initialize>, amount: u64, answer: u8) -> Result<()> {
-        instructions::initialize(ctx, amount, answer)
+    #[allow(clippy::too_many_arguments)]
+    pub fn initialize(
+        ctx: Context<Initialize>,
+        index: u16,
+        amount: u64,
+        pic: String,
+        content: String,
+        option1: String,
+        option2: String,
+        option3: String,
+        option4: String,
+    ) -> Result<()> {
+        instructions::initialize(
+            ctx, index, amount, pic, content, option1, option2, option3, option4,
+        )
     }
 
-    pub fn submit(ctx: Context<Submit>, answer: u8) -> Result<()> {
-        instructions::submit(ctx, answer)
+    pub fn submit(ctx: Context<Submit>, index: u16, answer: u8) -> Result<()> {
+        instructions::submit(ctx, index, answer)
     }
 
-    pub fn close(ctx: Context<Close>) -> Result<()> {
-        instructions::close(ctx)
+    pub fn close(ctx: Context<Close>, index: u16, answer: u8) -> Result<()> {
+        instructions::close(ctx, index, answer)
     }
 
-    pub fn claim(ctx: Context<Claim>) -> Result<()> {
-        instructions::claim(ctx)
+    pub fn claim(ctx: Context<Claim>, index: u16) -> Result<()> {
+        instructions::claim(ctx, index)
     }
 }

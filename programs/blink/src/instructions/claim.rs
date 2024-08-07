@@ -7,7 +7,7 @@ use anchor_spl::{
     token_interface::{transfer_checked, Mint, TokenAccount, TokenInterface, TransferChecked},
 };
 
-pub fn claim(ctx: Context<Claim>) -> Result<()> {
+pub fn claim(ctx: Context<Claim>, index: u16) -> Result<()> {
     let blink_state = &ctx.accounts.blink_state.load()?;
     if !blink_state.closed {
         return err!(ErrorCode::Opening);
@@ -17,12 +17,20 @@ pub fn claim(ctx: Context<Claim>) -> Result<()> {
         return err!(ErrorCode::RewardZero);
     }
 
+    if blink_state.index != index {
+        return err!(ErrorCode::InvalidIndex);
+    }
+
     let submit_state = &mut ctx.accounts.submit_state.load_mut()?;
     if submit_state.claim {
         return err!(ErrorCode::ClaimAlready);
     }
     if blink_state.answer != submit_state.answer {
         return err!(ErrorCode::InvalidClaim);
+    }
+
+    if blink_state.index != submit_state.index {
+        return err!(ErrorCode::InvalidIndex);
     }
 
     submit_state.claim = true;
@@ -48,6 +56,7 @@ pub fn claim(ctx: Context<Claim>) -> Result<()> {
 }
 
 #[derive(Accounts)]
+#[instruction(index: u16)]
 pub struct Claim<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
@@ -55,13 +64,22 @@ pub struct Claim<'info> {
     #[account(
         mut,
         seeds = [
-            SUBMIT_SEED.as_bytes(),
-            blink_state.key().as_ref(),
-            user.key().as_ref(),
-        ],
-        bump = blink_state.load()?.bump,
+                SUBMIT_SEED.as_bytes(),
+                &index.to_le_bytes().as_ref(),
+                user.key().as_ref(),
+            ],
+        bump = submit_state.load()?.bump,
     )]
     pub submit_state: AccountLoader<'info, SubmitState>,
+
+    #[account(
+        mut,
+        seeds = [
+            BLINK_SEED.as_bytes(),
+            &index.to_le_bytes().as_ref(),
+        ],
+        bump=blink_state.load()?.bump,
+    )]
     pub blink_state: AccountLoader<'info, BlinkState>,
 
     /// CHECK: pool vault authority

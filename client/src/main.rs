@@ -91,17 +91,23 @@ pub enum BlinkCommands {
         index: u16,
         token_mint: Pubkey,
         amount: u64,
-        answer: u8,
+        pic: String,
+        content: String,
+        option1: String,
+        option2: String,
+        option3: String,
+        option4: String,
     },
     Submit {
-        blink_state: Pubkey,
+        index: u16,
         answer: u8,
     },
     Close {
-        blink_state: Pubkey,
+        index: u16,
+        answer: u8,
     },
     Claim {
-        submit_state: Pubkey,
+        index: u16,
     },
 }
 fn main() -> Result<()> {
@@ -155,9 +161,25 @@ fn main() -> Result<()> {
             index,
             token_mint,
             amount,
-            answer,
+            pic,
+            content,
+            option1,
+            option2,
+            option3,
+            option4,
         } => {
-            let initialize = initialize_instr(&pool_config, index, token_mint, amount, answer)?;
+            let initialize = initialize_instr(
+                &pool_config,
+                index,
+                token_mint,
+                amount,
+                pic,
+                content,
+                option1,
+                option2,
+                option3,
+                option4,
+            )?;
             let payer = read_keypair_file(&pool_config.creator_path)?;
 
             let signers = vec![&payer];
@@ -171,11 +193,8 @@ fn main() -> Result<()> {
             let signature = send_txn(&rpc_client, &txn, true)?;
             println!("{}", signature);
         }
-        BlinkCommands::Submit {
-            blink_state,
-            answer,
-        } => {
-            let sumbit = submit_instr(&pool_config, blink_state, answer)?;
+        BlinkCommands::Submit { index, answer } => {
+            let sumbit = submit_instr(&pool_config, index, answer)?;
             let payer = read_keypair_file(&pool_config.user_path)?;
 
             let signers = vec![&payer];
@@ -189,8 +208,8 @@ fn main() -> Result<()> {
             let signature = send_txn(&rpc_client, &txn, true)?;
             println!("{}", signature);
         }
-        BlinkCommands::Close { blink_state } => {
-            let close = close_instr(&pool_config, blink_state)?;
+        BlinkCommands::Close { index, answer } => {
+            let close = close_instr(&pool_config, index, answer)?;
             let payer = read_keypair_file(&pool_config.creator_path)?;
 
             let signers = vec![&payer];
@@ -204,8 +223,8 @@ fn main() -> Result<()> {
             let signature = send_txn(&rpc_client, &txn, true)?;
             println!("{}", signature);
         }
-        BlinkCommands::Claim { submit_state } => {
-            let claim = claim_instr(&pool_config, submit_state)?;
+        BlinkCommands::Claim { index } => {
+            let claim = claim_instr(&pool_config, index)?;
             let payer = read_keypair_file(&pool_config.user_path)?;
 
             let signers = vec![&payer];

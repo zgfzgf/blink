@@ -31,15 +31,18 @@ pub const BLINK_VAULT_SEED: &str = "blink_vault_seed";
 #[account(zero_copy(unsafe))]
 #[derive(InitSpace)] // automatically calculate the space required for the struct
 pub struct BlinkState {
+    pub index: u16,
     pub blink_config: Pubkey,
     pub pool_creator: Pubkey,
     pub vault: Pubkey,
     pub token_mint: Pubkey,
-    pub token_program: Pubkey,
+    pub right1: u32,
+    pub right2: u32,
+    pub right3: u32,
+    pub right4: u32,
+    pub amount: u64,
     pub closed: bool,
     pub answer: u8,
-    pub rights: u32,
-    pub amount: u64,
     pub reward: u64,
     pub auth_bump: u8,
     pub bump: u8,
@@ -49,6 +52,7 @@ pub const SUBMIT_SEED: &str = "submit_seed";
 #[account(zero_copy(unsafe))]
 #[derive(InitSpace)] // automatically calculate the space required for the struct
 pub struct SubmitState {
+    pub index: u16,
     pub blink_state: Pubkey,
     pub user: Pubkey,
     pub answer: u8,

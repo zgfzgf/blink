@@ -5,8 +5,20 @@ use anchor_spl::{
     associated_token::AssociatedToken,
     token_interface::{transfer_checked, Mint, TokenAccount, TokenInterface, TransferChecked},
 };
+use std::ops::DerefMut;
 
-pub fn initialize(ctx: Context<Initialize>, amount: u64, answer: u8) -> Result<()> {
+#[allow(clippy::too_many_arguments)]
+pub fn initialize(
+    ctx: Context<Initialize>,
+    index: u16,
+    amount: u64,
+    pic: String,
+    content: String,
+    option1: String,
+    option2: String,
+    option3: String,
+    option4: String,
+) -> Result<()> {
     let transfer_accounts = TransferChecked {
         from: ctx.accounts.creator_token.to_account_info(),
         mint: ctx.accounts.token_mint.to_account_info(),
@@ -21,16 +33,29 @@ pub fn initialize(ctx: Context<Initialize>, amount: u64, answer: u8) -> Result<(
 
     transfer_checked(cpi_context, amount, ctx.accounts.token_mint.decimals)?;
 
-    let blink_state = &mut ctx.accounts.blink_state.load_init()?;
+    let blink_config = ctx.accounts.blink_config.deref_mut();
+    blink_config.owner = ctx.accounts.creator.key();
+    blink_config.index = index;
+    blink_config.pic = pic;
+    blink_config.content = content;
+    blink_config.option1 = option1;
+    blink_config.option2 = option2;
+    blink_config.option3 = option3;
+    blink_config.option4 = option4;
+    blink_config.bump = ctx.bumps.blink_config;
 
+    let blink_state = &mut ctx.accounts.blink_state.load_init()?;
+    blink_state.index = index;
     blink_state.blink_config = ctx.accounts.blink_config.key();
     blink_state.pool_creator = ctx.accounts.creator.key();
     blink_state.vault = ctx.accounts.vault.key();
     blink_state.token_mint = ctx.accounts.token_mint.key();
-    blink_state.token_program = ctx.accounts.token_program.key();
     blink_state.closed = false;
-    blink_state.answer = answer;
-    blink_state.rights = 0;
+    blink_state.answer = 0;
+    blink_state.right1 = 0;
+    blink_state.right2 = 0;
+    blink_state.right3 = 0;
+    blink_state.right4 = 0;
     blink_state.amount = amount;
     blink_state.reward = 0;
     blink_state.auth_bump = ctx.bumps.authority;
@@ -40,6 +65,7 @@ pub fn initialize(ctx: Context<Initialize>, amount: u64, answer: u8) -> Result<(
 }
 
 #[derive(Accounts)]
+#[instruction(index: u16)]
 pub struct Initialize<'info> {
     /// Address paying to create the pool. Can be anyone
     #[account(mut)]
@@ -54,14 +80,23 @@ pub struct Initialize<'info> {
     )]
     pub authority: UncheckedAccount<'info>,
 
-    pub blink_config: Box<Account<'info, BlinkConfig>>,
+    #[account(
+        init,
+        seeds = [
+            CONFIG_SEED.as_bytes(),
+            &index.to_le_bytes().as_ref(),
+        ],
+        bump,
+        payer = creator,
+        space = ANCHOR_DISCRIMINATOR + BlinkConfig::INIT_SPACE
+    )]
+    pub blink_config: Account<'info, BlinkConfig>,
 
     #[account(
         init,
         seeds = [
             BLINK_SEED.as_bytes(),
-            blink_config.key().as_ref(),
-            token_mint.key().as_ref(),
+            &index.to_le_bytes().as_ref(),
         ],
         bump,
         payer = creator,
