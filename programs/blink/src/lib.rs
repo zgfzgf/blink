@@ -8,7 +8,7 @@ use instructions::*;
 
 pub const AUTH_SEED: &str = "auth_seed";
 
-declare_id!("45wPxt3utVDUdsHzu6Wq2e65xKSgwq6r9JEdSq9heAfb");
+declare_id!("GuxhyMkqSAfUa1JxqrDqR7yVtH5nPJ4zjf2Nm3U3ejpX");
 
 #[program]
 pub mod blink {

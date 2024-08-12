@@ -46,8 +46,8 @@ pub fn initialize(
 
     let blink_state = &mut ctx.accounts.blink_state.load_init()?;
     blink_state.index = index;
+    blink_state.creator = ctx.accounts.creator.key();
     blink_state.blink_config = ctx.accounts.blink_config.key();
-    blink_state.pool_creator = ctx.accounts.creator.key();
     blink_state.vault = ctx.accounts.vault.key();
     blink_state.token_mint = ctx.accounts.token_mint.key();
     blink_state.closed = false;
@@ -60,6 +60,15 @@ pub fn initialize(
     blink_state.reward = 0;
     blink_state.auth_bump = ctx.bumps.authority;
     blink_state.bump = ctx.bumps.blink_state;
+
+    emit!(InitializeEvent {
+        index,
+        creator: ctx.accounts.creator.key(),
+        valut: ctx.accounts.vault.key(),
+        token_mint: ctx.accounts.token_mint.key(),
+        config: ctx.accounts.blink_config.key(),
+        amount
+    });
 
     Ok(())
 }

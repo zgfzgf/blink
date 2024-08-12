@@ -162,11 +162,15 @@ pub fn close_instr(config: &ClientConfig, index: u16, answer: u8) -> Result<Vec<
         &program.id(),
     );
 
+    //let (event_key, _bump) = Pubkey::find_program_address(&[b"__event_authority"], &program.id());
+
     let instructions = program
         .request()
         .accounts(blink_accounts::Close {
             owner: creator.pubkey(),
             blink_state: blink_state_key,
+            //event_authority: event_key,
+            //program: program.id(),
         })
         .args(blink_instructions::Close { index, answer })
         .instructions()?;

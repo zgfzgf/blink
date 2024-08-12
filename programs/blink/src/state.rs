@@ -26,14 +26,13 @@ pub struct BlinkConfig {
 }
 
 pub const BLINK_SEED: &str = "blink_seed";
-pub const BLINK_VAULT_SEED: &str = "blink_vault_seed";
 
 #[account(zero_copy(unsafe))]
 #[derive(InitSpace)] // automatically calculate the space required for the struct
 pub struct BlinkState {
     pub index: u16,
+    pub creator: Pubkey,
     pub blink_config: Pubkey,
-    pub pool_creator: Pubkey,
     pub vault: Pubkey,
     pub token_mint: Pubkey,
     pub right1: u32,
@@ -58,4 +57,42 @@ pub struct SubmitState {
     pub answer: u8,
     pub claim: bool,
     pub bump: u8,
+}
+
+#[event]
+#[cfg_attr(feature = "client", derive(Debug))]
+pub struct InitializeEvent {
+    #[index]
+    pub index: u16,
+    pub creator: Pubkey,
+    pub valut: Pubkey,
+    pub token_mint: Pubkey,
+    pub config: Pubkey,
+    pub amount: u64,
+}
+
+#[event]
+#[cfg_attr(feature = "client", derive(Debug))]
+pub struct SubmitEvent {
+    #[index]
+    pub index: u16,
+    pub user: Pubkey,
+    pub answer: u8,
+}
+
+#[event]
+#[cfg_attr(feature = "client", derive(Debug))]
+pub struct CloseEvent {
+    #[index]
+    pub index: u16,
+}
+
+#[event]
+#[cfg_attr(feature = "client", derive(Debug))]
+pub struct ClaimEvent {
+    #[index]
+    pub index: u16,
+    #[index]
+    pub user: Pubkey,
+    pub reward: u64,
 }

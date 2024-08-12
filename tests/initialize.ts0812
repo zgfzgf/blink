@@ -21,7 +21,7 @@ describe("blink start", () => {
   const provider = program.provider as anchor.AnchorProvider;
   const payer = provider.wallet as anchor.Wallet;
 
-  const index = 4002;
+  const index = 3010;
   const answer = 3;
   const amount = new BN(10 ** 9);
   const tokenMint = new PublicKey(
@@ -73,39 +73,28 @@ describe("blink start", () => {
     console.log(`Config Address   ->: ${config}`);
     */
   });
-  const configInfo = async () => {
-    console.log(`config info`);
-    const configInfo = await program.account.blinkConfig.fetch(config);
-    console.log(`index     : ${configInfo.index}`);
-    console.log(`pic       : ${configInfo.pic}`);
-    console.log(`content   : ${configInfo.content}`);
-    console.log(`option1   : ${configInfo.option1}`);
-    console.log(`option2   : ${configInfo.option2}`);
-    console.log(`option3   : ${configInfo.option3}`);
-    console.log(`option4   : ${configInfo.option4}`);
-  };
-  const blinkInfo = async () => {
-    console.log(`blink info`);
-    const blinkInfo = await program.account.blinkState.fetch(blink);
-    console.log(`index      : ${blinkInfo.index}`);
-    console.log(`closed     : ${blinkInfo.closed}`);
-    console.log(`amount     : ${blinkInfo.amount}`);
-    console.log(`answer     : ${blinkInfo.answer}`);
-    console.log(`reward     : ${blinkInfo.reward}`);
-    console.log(`right1     : ${blinkInfo.right1}`);
-    console.log(`right2     : ${blinkInfo.right2}`);
-    console.log(`right3     : ${blinkInfo.right3}`);
-    console.log(`right4     : ${blinkInfo.right4}`);
-  };
-  const submitInfo = async () => {
-    console.log(`submit info`);
-    const submitInfo = await program.account.submitState.fetch(submit);
-    console.log(`index     : ${submitInfo.index}`);
-    console.log(`answer    : ${submitInfo.answer}`);
-    console.log(`claim     : ${submitInfo.claim}`);
-    console.log(`user      : ${submitInfo.user}`);
-  };
-
+  it("init Test", async () => {
+    try {
+      await program.methods
+        .initialize(index, amount, "pic", "content", "op1", "op2", "op3", "op4")
+        .accounts({
+          creator: creator.publicKey,
+          authority: auth,
+          blinkConfig: config,
+          blinkState: blink,
+          tokenMint: tokenMint,
+          creatorToken: creatorToken,
+          vault: vault,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .signers([creator])
+        .rpc()
+        .then(confirm);
+    } catch (error) {
+      console.log("\nError index======");
+      console.log(error);
+    }
+  });
   it("initialize func", async () => {
     await program.methods
       .initialize(index, amount, "pic", "content", "op1", "op2", "op3", "op4")
@@ -122,12 +111,6 @@ describe("blink start", () => {
       .signers([creator])
       .rpc();
   });
-
-  it("Read config and blink data", async () => {
-    await configInfo();
-    await blinkInfo();
-  });
-
   it("submit func", async () => {
     await program.methods
       .submit(index, answer)
@@ -139,11 +122,6 @@ describe("blink start", () => {
       .signers([user])
       .rpc();
   });
-
-  it("Read submit data", async () => {
-    await submitInfo();
-  });
-
   it("close func", async () => {
     await program.methods
       .close(index, answer)
@@ -154,11 +132,6 @@ describe("blink start", () => {
       .signers([creator])
       .rpc();
   });
-
-  it("Read blink  data", async () => {
-    await blinkInfo();
-  });
-
   it("claim func", async () => {
     const amount = new BN(10 ** 9);
 
@@ -178,8 +151,29 @@ describe("blink start", () => {
       .rpc();
   });
 
-  it("Read binkState and sumbit data", async () => {
-    await blinkInfo();
-    await submitInfo();
+  it("submit Test", async () => {
+    try {
+      const tx = await program.methods
+        .submit(index, answer)
+        .accounts({
+          user: user.publicKey,
+          submitState: submit,
+          blinkState: blink,
+        })
+        .signers([user])
+        .rpc()
+        .then(confirm);
+    } catch (error) {
+      console.log("\nError index");
+      //console.log(error);
+      console.log(error.msg);
+    }
   });
+
+  /*
+  
+  it("Read the new account's data", async () => {
+    //const blinkInfo = await program.account.blinkState.fetch(values.blinkState);
+    //console.log(`reward     : ${blinkInfo.reward}`);
+  });*/
 });

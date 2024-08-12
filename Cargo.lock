@@ -1168,6 +1168,7 @@ dependencies = [
  "anchor-lang",
  "anyhow",
  "arrayref",
+ "base64 0.21.7",
  "bincode",
  "blink",
  "bs58 0.5.1",

@@ -27,6 +27,12 @@ pub fn submit(ctx: Context<Submit>, index: u16, answer: u8) -> Result<()> {
     submit_state.claim = false;
     submit_state.bump = ctx.bumps.submit_state;
 
+    emit!(SubmitEvent {
+        index,
+        user: ctx.accounts.user.key(),
+        answer
+    });
+
     Ok(())
 }
 

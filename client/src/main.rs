@@ -2,17 +2,21 @@ use anchor_client::{Client, Cluster};
 use anyhow::{format_err, Result};
 use clap::Parser;
 use configparser::ini::Ini;
-use solana_client::rpc_client::RpcClient;
+use solana_client::{rpc_client::RpcClient, rpc_config::RpcTransactionConfig};
 use solana_sdk::{
+    commitment_config::CommitmentConfig,
     pubkey::Pubkey,
-    signature::{Keypair, Signer},
+    signature::{Keypair, Signature, Signer},
     transaction::Transaction,
 };
+use solana_transaction_status::UiTransactionEncoding;
+
 use std::rc::Rc;
 use std::str::FromStr;
 
 mod instructions;
 use instructions::blink_instructions::*;
+use instructions::event_instructions_parse::*;
 use instructions::rpc::*;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -108,6 +112,15 @@ pub enum BlinkCommands {
     },
     Claim {
         index: u16,
+    },
+    DecodeInstruction {
+        instr_hex_data: String,
+    },
+    DecodeEvent {
+        log_event: String,
+    },
+    DecodeTxLog {
+        tx_id: String,
     },
 }
 fn main() -> Result<()> {
@@ -237,6 +250,40 @@ fn main() -> Result<()> {
             );
             let signature = send_txn(&rpc_client, &txn, true)?;
             println!("{}", signature);
+        }
+        BlinkCommands::DecodeInstruction { instr_hex_data } => {
+            handle_program_instruction(&instr_hex_data, InstructionDecodeType::BaseHex)?;
+        }
+        BlinkCommands::DecodeEvent { log_event } => {
+            handle_program_log(&pool_config.blink_program.to_string(), &log_event, false)?;
+        }
+        BlinkCommands::DecodeTxLog { tx_id } => {
+            let signature = Signature::from_str(&tx_id)?;
+            let tx = rpc_client.get_transaction_with_config(
+                &signature,
+                RpcTransactionConfig {
+                    encoding: Some(UiTransactionEncoding::Json),
+                    commitment: Some(CommitmentConfig::confirmed()),
+                    max_supported_transaction_version: Some(0),
+                },
+            )?;
+            let transaction = tx.transaction;
+            // get meta
+            let meta = if transaction.meta.is_some() {
+                transaction.meta
+            } else {
+                None
+            };
+            // get encoded_transaction
+            let encoded_transaction = transaction.transaction;
+            // decode instruction data
+            parse_program_instruction(
+                &pool_config.blink_program.to_string(),
+                encoded_transaction,
+                meta.clone(),
+            )?;
+            // decode logs
+            parse_program_event(&pool_config.blink_program.to_string(), meta.clone())?;
         }
     }
     Ok(())

@@ -52,6 +52,12 @@ pub fn claim(ctx: Context<Claim>, index: u16) -> Result<()> {
 
     transfer_checked(cpi_context, reward, ctx.accounts.token_mint.decimals)?;
 
+    emit!(ClaimEvent {
+        index,
+        user: ctx.accounts.user.key(),
+        reward
+    });
+
     Ok(())
 }
 
@@ -110,7 +116,7 @@ pub struct Claim<'info> {
     pub vault: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
-    mint::token_program = token_program
+        mint::token_program = token_program
     )]
     pub token_mint: Box<InterfaceAccount<'info, Mint>>,
 

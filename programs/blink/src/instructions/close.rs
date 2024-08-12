@@ -31,13 +31,15 @@ pub fn close(ctx: Context<Close>, index: u16, answer: u8) -> Result<()> {
         blink_state.reward = blink_state.amount.checked_div(rights.into()).unwrap()
     }
 
+    emit!(CloseEvent { index });
+
     Ok(())
 }
 
 #[derive(Accounts)]
 #[instruction(index: u16)]
 pub struct Close<'info> {
-    #[account(address = blink_state.load()?.pool_creator)]
+    #[account(address = blink_state.load()?.creator)]
     pub owner: Signer<'info>,
 
     #[account(mut,
