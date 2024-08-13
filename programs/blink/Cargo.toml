@@ -10,6 +10,7 @@ name = "blink"
 
 [features]
 default = []
+open-time = []
 cpi = ["no-entrypoint"]
 no-entrypoint = []
 no-idl = []

@@ -1,0 +1,115 @@
+import * as anchor from "@coral-xyz/anchor";
+import { Program } from "@coral-xyz/anchor";
+import { Blink } from "../target/types/blink";
+import { PublicKey, Keypair } from "@solana/web3.js";
+import {
+  getAuthAddress,
+  getConfigAddress,
+  getBlinkAddress,
+  getSubmitAddress,
+  getSplTokenAddress,
+  getKeypair,
+} from "./utils";
+import { BN } from "@coral-xyz/anchor";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+
+describe("blink start", () => {
+  // Configure the client to use the local cluster.
+  anchor.setProvider(anchor.AnchorProvider.env());
+
+  const program = anchor.workspace.Blink as Program<Blink>;
+  const provider = program.provider as anchor.AnchorProvider;
+  const payer = provider.wallet as anchor.Wallet;
+
+  const index = 4009;
+  const answer = 3;
+  const amount = new BN(10 ** 9);
+  const openTime = new BN(1767196800);
+  const tokenMint = new PublicKey(
+    "W8LRujy76DASXHev9VUWdbAUyBZnXmS5MXHKNScPmwW"
+  );
+
+  let creator, user: Keypair;
+  let auth, config, blink, submit, vault, creatorToken, userToken: PublicKey;
+
+  beforeEach(() => {
+    let _;
+    [auth, _] = getAuthAddress(program.programId);
+    [config, _] = getConfigAddress(index, program.programId);
+    [blink, _] = getBlinkAddress(index, program.programId);
+    vault = getSplTokenAddress(tokenMint, auth, TOKEN_PROGRAM_ID);
+
+    creator = getKeypair("./creator.json");
+    user = getKeypair("./user.json");
+
+    creatorToken = getSplTokenAddress(
+      tokenMint,
+      creator.publicKey,
+      TOKEN_PROGRAM_ID
+    );
+    userToken = getSplTokenAddress(tokenMint, user.publicKey, TOKEN_PROGRAM_ID);
+    [submit, _] = getSubmitAddress(index, user.publicKey, program.programId);
+    /*
+    console.log(`TOKEN_PROGRAM      : ${TOKEN_PROGRAM_ID}`);
+    console.log(`program.programId  : ${program.programId}`);
+    console.log(`Creator Address    : ${creator.publicKey}`);
+    console.log(`CreatorToken       : ${creatorToken}`);
+    console.log(``);
+    console.log(`Payer Address      : ${payer.publicKey}`);
+    console.log(`Program Address    : ${program.programId}`);
+    console.log(`Auth Address       : ${auth}`);
+    console.log(`Blink Address      : ${blink}`);
+    console.log(`Submit Address     : ${submit}`);
+    console.log(`CreatorToken       : ${creatorToken}`);
+    console.log(`Vault Address      : ${vault}`);
+    console.log(`Config Address   ->: ${config}`);
+    */
+  });
+  const configInfo = async () => {
+    console.log(`config info`);
+    const configInfo = await program.account.blinkConfig.fetch(config);
+    console.log(`index     : ${configInfo.index}`);
+    console.log(`pic       : ${configInfo.pic}`);
+    console.log(`content   : ${configInfo.content}`);
+    console.log(`option1   : ${configInfo.option1}`);
+    console.log(`option2   : ${configInfo.option2}`);
+    console.log(`option3   : ${configInfo.option3}`);
+    console.log(`option4   : ${configInfo.option4}`);
+  };
+
+  const blinkInfo = async () => {
+    console.log(`blink info`);
+    const blinkInfo = await program.account.blinkState.fetch(blink);
+    console.log(`index      : ${blinkInfo.index}`);
+    console.log(`closed     : ${blinkInfo.closed}`);
+    console.log(`amount     : ${blinkInfo.amount}`);
+    console.log(`answer     : ${blinkInfo.answer}`);
+    console.log(`reward     : ${blinkInfo.reward}`);
+    console.log(`right1     : ${blinkInfo.right1}`);
+    console.log(`right2     : ${blinkInfo.right2}`);
+    console.log(`right3     : ${blinkInfo.right3}`);
+    console.log(`right4     : ${blinkInfo.right4}`);
+  };
+
+  it("initialize func", async () => {
+    await program.methods
+      .initialize(index, amount, "pic", "content", "op1", "op2", "op3", "op4")
+      .accounts({
+        creator: creator.publicKey,
+        authority: auth,
+        blinkConfig: config,
+        blinkState: blink,
+        tokenMint: tokenMint,
+        creatorToken: creatorToken,
+        vault: vault,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .signers([creator])
+      .rpc();
+  });
+
+  it("Read config and blink data", async () => {
+    //await configInfo();
+    await blinkInfo();
+  });
+});

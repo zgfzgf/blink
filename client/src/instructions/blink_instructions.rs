@@ -57,6 +57,7 @@ pub fn initialize_instr(
     index: u16,
     token_mint: Pubkey,
     amount: u64,
+    open_time: u64,
     pic: String,
     content: String,
     option1: String,
@@ -103,6 +104,7 @@ pub fn initialize_instr(
         .args(blink_instructions::Initialize {
             index,
             amount,
+            open_time,
             pic,
             content,
             option1,

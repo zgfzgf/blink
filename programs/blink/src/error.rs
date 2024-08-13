@@ -18,4 +18,8 @@ pub enum ErrorCode {
     ClaimAlready,
     #[msg("Input account owner is not the program address")]
     InvalidOwner,
+    #[msg("Invalid OpenTime")]
+    InvalidOpenTime,
+    #[msg("Invalid CloseTime")]
+    InvalidCloseTime,
 }

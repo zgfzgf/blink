@@ -21,9 +21,10 @@ describe("blink start", () => {
   const provider = program.provider as anchor.AnchorProvider;
   const payer = provider.wallet as anchor.Wallet;
 
-  const index = 4002;
+  const index = 4013;
   const answer = 3;
   const amount = new BN(10 ** 9);
+  // const openTime = 1767196800;
   const tokenMint = new PublicKey(
     "W8LRujy76DASXHev9VUWdbAUyBZnXmS5MXHKNScPmwW"
   );
@@ -106,6 +107,29 @@ describe("blink start", () => {
     console.log(`user      : ${submitInfo.user}`);
   };
 
+  it("Errot Init Test", async () => {
+    try {
+      await program.methods
+        .initialize(index, amount, "pic", "content", "op1", "op2", "op3", "op4")
+        .accounts({
+          creator: creator.publicKey,
+          authority: auth,
+          blinkConfig: config,
+          blinkState: blink,
+          tokenMint: tokenMint,
+          creatorToken: creatorToken,
+          vault: vault,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .signers([user])
+        .rpc()
+        .then(confirm);
+    } catch (error) {
+      console.log("\nError user======");
+      console.log(error);
+    }
+  });
+
   it("initialize func", async () => {
     await program.methods
       .initialize(index, amount, "pic", "content", "op1", "op2", "op3", "op4")
@@ -120,12 +144,54 @@ describe("blink start", () => {
         tokenProgram: TOKEN_PROGRAM_ID,
       })
       .signers([creator])
-      .rpc();
+      .rpc()
+      .then(confirm);
   });
 
   it("Read config and blink data", async () => {
     await configInfo();
     await blinkInfo();
+  });
+
+  it("Errot Init Test", async () => {
+    try {
+      await program.methods
+        .initialize(index, amount, "pic", "content", "op1", "op2", "op3", "op4")
+        .accounts({
+          creator: creator.publicKey,
+          authority: auth,
+          blinkConfig: config,
+          blinkState: blink,
+          tokenMint: tokenMint,
+          creatorToken: creatorToken,
+          vault: vault,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .signers([creator])
+        .rpc()
+        .then(confirm);
+    } catch (error) {
+      console.log("\nError index======");
+      console.log(error);
+    }
+  });
+
+  it("Errot Submit Test", async () => {
+    try {
+      await program.methods
+        .submit(index, answer)
+        .accounts({
+          user: user.publicKey,
+          submitState: submit,
+          blinkState: blink,
+        })
+        .signers([creator])
+        .rpc()
+        .then(confirm);
+    } catch (error) {
+      console.log("\nError submit======");
+      console.log(error);
+    }
   });
 
   it("submit func", async () => {
@@ -137,11 +203,47 @@ describe("blink start", () => {
         blinkState: blink,
       })
       .signers([user])
-      .rpc();
+      .rpc()
+      .then(confirm);
   });
 
   it("Read submit data", async () => {
     await submitInfo();
+  });
+
+  it("Errot Submit Test", async () => {
+    try {
+      await program.methods
+        .submit(index, answer)
+        .accounts({
+          user: user.publicKey,
+          submitState: submit,
+          blinkState: blink,
+        })
+        .signers([user])
+        .rpc()
+        .then(confirm);
+    } catch (error) {
+      console.log("\nError submit======");
+      console.log(error);
+    }
+  });
+
+  it("Errot Close Test", async () => {
+    try {
+      await program.methods
+        .close(index, answer)
+        .accounts({
+          owner: user.publicKey,
+          blinkState: blink,
+        })
+        .signers([user])
+        .rpc()
+        .then(confirm);
+    } catch (error) {
+      console.log("\nError close======");
+      console.log(error);
+    }
   });
 
   it("close func", async () => {
@@ -152,16 +254,55 @@ describe("blink start", () => {
         blinkState: blink,
       })
       .signers([creator])
-      .rpc();
+      .rpc()
+      .then(confirm);
   });
 
   it("Read blink  data", async () => {
     await blinkInfo();
   });
 
-  it("claim func", async () => {
-    const amount = new BN(10 ** 9);
+  it("Errot Close Test", async () => {
+    try {
+      await program.methods
+        .close(index, answer)
+        .accounts({
+          owner: creator.publicKey,
+          blinkState: blink,
+        })
+        .signers([creator])
+        .rpc()
+        .then(confirm);
+    } catch (error) {
+      console.log("\nError close======");
+      console.log(error);
+    }
+  });
 
+  it("Errot Claim Test", async () => {
+    try {
+      await program.methods
+        .claim(index)
+        .accounts({
+          user: user.publicKey,
+          submitState: submit,
+          blink_state: blink,
+          authority: auth,
+          user_account: userToken,
+          vault: vault,
+          tokenMint: tokenMint,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .signers([creator])
+        .rpc()
+        .then(confirm);
+    } catch (error) {
+      console.log("\nError claim======");
+      console.log(error);
+    }
+  });
+
+  it("claim func", async () => {
     await program.methods
       .claim(index)
       .accounts({
@@ -175,11 +316,34 @@ describe("blink start", () => {
         tokenProgram: TOKEN_PROGRAM_ID,
       })
       .signers([user])
-      .rpc();
+      .rpc()
+      .then(confirm);
   });
 
   it("Read binkState and sumbit data", async () => {
     await blinkInfo();
     await submitInfo();
+  });
+  it("Errot Claim Test", async () => {
+    try {
+      await program.methods
+        .claim(index)
+        .accounts({
+          user: user.publicKey,
+          submitState: submit,
+          blink_state: blink,
+          authority: auth,
+          user_account: userToken,
+          vault: vault,
+          tokenMint: tokenMint,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .signers([user])
+        .rpc()
+        .then(confirm);
+    } catch (error) {
+      console.log("\nError claim======");
+      console.log(error);
+    }
   });
 });

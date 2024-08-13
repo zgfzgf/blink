@@ -1,10 +1,15 @@
+#[cfg(feature = "open-time")]
+use crate::error::ErrorCode;
 use crate::state::*;
 
 use anchor_lang::prelude::*;
+#[cfg(feature = "open-time")]
+use anchor_lang::solana_program::clock;
 use anchor_spl::{
     associated_token::AssociatedToken,
     token_interface::{transfer_checked, Mint, TokenAccount, TokenInterface, TransferChecked},
 };
+
 use std::ops::DerefMut;
 
 #[allow(clippy::too_many_arguments)]
@@ -12,6 +17,7 @@ pub fn initialize(
     ctx: Context<Initialize>,
     index: u16,
     amount: u64,
+    #[cfg(feature = "open-time")] open_time: u64,
     pic: String,
     content: String,
     option1: String,
@@ -58,8 +64,21 @@ pub fn initialize(
     blink_state.right4 = 0;
     blink_state.amount = amount;
     blink_state.reward = 0;
+
     blink_state.auth_bump = ctx.bumps.authority;
     blink_state.bump = ctx.bumps.blink_state;
+
+    #[cfg(feature = "open-time")]
+    {
+        let block_timestamp = clock::Clock::get()?.unix_timestamp as u64;
+        if open_time < block_timestamp {
+            return err!(ErrorCode::InvalidOpenTime);
+        }
+        let close_time = open_time.checked_add(PERIOD).unwrap();
+
+        blink_state.open_time = block_timestamp;
+        blink_state.close_time = close_time;
+    }
 
     emit!(InitializeEvent {
         index,
