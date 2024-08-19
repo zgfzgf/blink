@@ -10,7 +10,6 @@ use std::rc::Rc;
 
 use crate::{read_keypair_file, ClientConfig};
 
-#[allow(clippy::too_many_arguments)]
 pub fn create_config_instr(
     config: &ClientConfig,
     open_time: u64,
@@ -32,6 +31,30 @@ pub fn create_config_instr(
             system_program: system_program::id(),
         })
         .args(blink_instructions::CreateTime { open_time, period })
+        .instructions()?;
+    Ok(instructions)
+}
+
+pub fn update_config_instr(
+    config: &ClientConfig,
+    open_time: u64,
+    period: u64,
+) -> Result<Vec<Instruction>> {
+    let payer = read_keypair_file(&config.owner_path)?;
+    let url = Cluster::Custom(config.http_url.clone(), config.ws_url.clone());
+    // Client.
+    let client = Client::new(url, Rc::new(payer));
+    let program = client.program(config.blink_program)?;
+
+    let (time_config_key, _bump) =
+        Pubkey::find_program_address(&[TIME_SEED.as_bytes()], &program.id());
+    let instructions = program
+        .request()
+        .accounts(blink_accounts::UpdateTimeConfig {
+            owner: program.payer(),
+            time_config: time_config_key,
+        })
+        .args(blink_instructions::UpdateTime { open_time, period })
         .instructions()?;
     Ok(instructions)
 }

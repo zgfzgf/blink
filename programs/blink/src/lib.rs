@@ -18,6 +18,10 @@ pub mod blink {
         instructions::create_time(ctx, open_time, period)
     }
 
+    pub fn update_time(ctx: Context<UpdateTimeConfig>, open_time: u64, period: u64) -> Result<()> {
+        instructions::update_time(ctx, open_time, period)
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn initialize(
         ctx: Context<Initialize>,

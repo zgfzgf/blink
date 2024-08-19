@@ -1,0 +1,92 @@
+import * as anchor from "@coral-xyz/anchor";
+import { Program } from "@coral-xyz/anchor";
+import { Blink } from "../target/types/blink";
+import { PublicKey, Keypair } from "@solana/web3.js";
+import {
+  getAuthAddress,
+  getTimeAddress,
+  getConfigAddress,
+  getBlinkAddress,
+  getSubmitAddress,
+  getSplTokenAddress,
+  getKeypair,
+} from "./utils";
+import { BN } from "@coral-xyz/anchor";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+
+describe("blink start", () => {
+  // Configure the client to use the local cluster.
+  anchor.setProvider(anchor.AnchorProvider.env());
+
+  const program = anchor.workspace.Blink as Program<Blink>;
+  const provider = program.provider as anchor.AnchorProvider;
+  const payer = provider.wallet as anchor.Wallet;
+
+  const index = 4003;
+  const answer = 3;
+  const amount = new BN(10 ** 9);
+  const tokenMint = new PublicKey(
+    "W8LRujy76DASXHev9VUWdbAUyBZnXmS5MXHKNScPmwW"
+  );
+
+  let creator, user: Keypair;
+  let auth,
+    config,
+    blink,
+    submit,
+    vault,
+    creatorToken,
+    userToken,
+    timeConfig: PublicKey;
+
+  const confirm = async (signature: string): Promise<string> => {
+    const block = await provider.connection.getLatestBlockhash();
+    await provider.connection.confirmTransaction({
+      signature,
+      ...block,
+    });
+    return signature;
+  };
+
+  beforeEach(() => {
+    let _;
+    [auth, _] = getAuthAddress(program.programId);
+    [timeConfig, _] = getTimeAddress(program.programId);
+    [config, _] = getConfigAddress(index, program.programId);
+    [blink, _] = getBlinkAddress(index, program.programId);
+    vault = getSplTokenAddress(tokenMint, auth, TOKEN_PROGRAM_ID);
+
+    creator = getKeypair("./creator.json");
+    user = getKeypair("./user.json");
+
+    creatorToken = getSplTokenAddress(
+      tokenMint,
+      creator.publicKey,
+      TOKEN_PROGRAM_ID
+    );
+    userToken = getSplTokenAddress(tokenMint, user.publicKey, TOKEN_PROGRAM_ID);
+    [submit, _] = getSubmitAddress(index, user.publicKey, program.programId);
+    /*
+    console.log(`TOKEN_PROGRAM      : ${TOKEN_PROGRAM_ID}`);
+    console.log(`program.programId  : ${program.programId}`);
+    console.log(`Creator Address    : ${creator.publicKey}`);
+    console.log(`CreatorToken       : ${creatorToken}`);
+    console.log(``);
+    console.log(`Payer Address      : ${payer.publicKey}`);
+    console.log(`Program Address    : ${program.programId}`);
+    console.log(`Auth Address       : ${auth}`);
+    console.log(`Blink Address      : ${blink}`);
+    console.log(`Submit Address     : ${submit}`);
+    console.log(`CreatorToken       : ${creatorToken}`);
+    console.log(`Vault Address      : ${vault}`);
+    console.log(`Config Address   ->: ${config}`);
+    */
+  });
+
+  it("Read the new account's data", async () => {
+    const timeInfo = await program.account.timeConfig.fetch(timeConfig);
+    console.log(`openTime     : ${timeInfo.openTime}`);
+    console.log(`closeTime    : ${timeInfo.closeTime}`);
+    console.log(`owner        : ${timeInfo.owner}`);
+  });
+});

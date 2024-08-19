@@ -86,6 +86,10 @@ pub enum BlinkCommands {
         open_time: u64,
         period: u64,
     },
+    UpdateTime {
+        open_time: u64,
+        period: u64,
+    },
     Initialize {
         index: u16,
         token_mint: Pubkey,
@@ -141,6 +145,20 @@ fn main() -> Result<()> {
             let recent_hash = rpc_client.get_latest_blockhash()?;
             let txn = Transaction::new_signed_with_payer(
                 &create_config,
+                Some(&payer.pubkey()),
+                &signers,
+                recent_hash,
+            );
+            let signature = send_txn(&rpc_client, &txn, true)?;
+            println!("{}", signature);
+        }
+        BlinkCommands::UpdateTime { open_time, period } => {
+            let update_config = update_config_instr(&pool_config, open_time, period)?;
+
+            let signers = vec![&payer];
+            let recent_hash = rpc_client.get_latest_blockhash()?;
+            let txn = Transaction::new_signed_with_payer(
+                &update_config,
                 Some(&payer.pubkey()),
                 &signers,
                 recent_hash,

@@ -8,6 +8,10 @@ export const AUTH_SEED = Buffer.from(
   anchor.utils.bytes.utf8.encode("auth_seed")
 );
 
+export const TIME_SEED = Buffer.from(
+  anchor.utils.bytes.utf8.encode("time_seed")
+);
+
 export const CONFIG_SEED = Buffer.from(
   anchor.utils.bytes.utf8.encode("config_seed")
 );
@@ -23,6 +27,14 @@ export const SUBMIT_SEED = Buffer.from(
 export function numberToBytes(index: number) {
   const num = new BN(index);
   return num.toArrayLike(Buffer, "le", 2);
+}
+
+export function getTimeAddress(programId: PublicKey): [PublicKey, number] {
+  const [address, bump] = PublicKey.findProgramAddressSync(
+    [TIME_SEED],
+    programId
+  );
+  return [address, bump];
 }
 
 export function getAuthAddress(programId: PublicKey): [PublicKey, number] {

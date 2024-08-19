@@ -6,18 +6,31 @@ use anchor_lang::solana_program::clock;
 use std::ops::DerefMut;
 
 pub fn create_time(ctx: Context<CreateTimeConfig>, open_time: u64, period: u64) -> Result<()> {
-    let time_config = ctx.accounts.time_config.deref_mut();
-    time_config.owner = ctx.accounts.owner.key();
-
     let block_timestamp = clock::Clock::get()?.unix_timestamp as u64;
     if open_time < block_timestamp {
         return err!(ErrorCode::InvalidOpenTime);
     }
     let close_time = open_time.checked_add(period).unwrap();
 
+    let time_config = ctx.accounts.time_config.deref_mut();
+    time_config.owner = ctx.accounts.owner.key();
     time_config.open_time = open_time;
     time_config.close_time = close_time;
     time_config.bump = ctx.bumps.time_config;
+
+    Ok(())
+}
+
+pub fn update_time(ctx: Context<UpdateTimeConfig>, open_time: u64, period: u64) -> Result<()> {
+    let block_timestamp = clock::Clock::get()?.unix_timestamp as u64;
+    if open_time < block_timestamp {
+        return err!(ErrorCode::InvalidOpenTime);
+    }
+    let close_time = open_time.checked_add(period).unwrap();
+
+    let time_config = ctx.accounts.time_config.deref_mut();
+    time_config.open_time = open_time;
+    time_config.close_time = close_time;
 
     Ok(())
 }
@@ -39,4 +52,16 @@ pub struct CreateTimeConfig<'info> {
     pub time_config: Account<'info, TimeConfig>,
 
     pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct UpdateTimeConfig<'info> {
+    #[account(mut)]
+    pub owner: Signer<'info>,
+
+    #[account(
+        mut,
+        has_one = owner,
+    )]
+    pub time_config: Account<'info, TimeConfig>,
 }

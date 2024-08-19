@@ -4,6 +4,7 @@ import { Blink } from "../target/types/blink";
 import { PublicKey, Keypair } from "@solana/web3.js";
 import {
   getAuthAddress,
+  getTimeAddress,
   getConfigAddress,
   getBlinkAddress,
   getSubmitAddress,
@@ -21,16 +22,19 @@ describe("blink start", () => {
   const provider = program.provider as anchor.AnchorProvider;
   const payer = provider.wallet as anchor.Wallet;
 
-  const index = 4013;
+  const index = 4016;
   const answer = 3;
   const amount = new BN(10 ** 9);
-  // const openTime = 1767196800;
+  const openTime = new BN(new Date().getTime() / 1000 + 60);
+  const period = new BN(600);
+
   const tokenMint = new PublicKey(
     "W8LRujy76DASXHev9VUWdbAUyBZnXmS5MXHKNScPmwW"
   );
 
-  let creator, user: Keypair;
+  let creator, user, owner: Keypair;
   let auth, config, blink, submit, vault, creatorToken, userToken: PublicKey;
+  let timeConfig: PublicKey;
 
   const confirm = async (signature: string): Promise<string> => {
     const block = await provider.connection.getLatestBlockhash();
@@ -41,13 +45,20 @@ describe("blink start", () => {
     return signature;
   };
 
+  function sleep(mm: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, mm * 1000));
+  }
+
   beforeEach(() => {
     let _;
     [auth, _] = getAuthAddress(program.programId);
+    [timeConfig, _] = getTimeAddress(program.programId);
     [config, _] = getConfigAddress(index, program.programId);
+
     [blink, _] = getBlinkAddress(index, program.programId);
     vault = getSplTokenAddress(tokenMint, auth, TOKEN_PROGRAM_ID);
 
+    owner = getKeypair("./owner.json");
     creator = getKeypair("./creator.json");
     user = getKeypair("./user.json");
 
@@ -107,6 +118,18 @@ describe("blink start", () => {
     console.log(`user      : ${submitInfo.user}`);
   };
 
+  it("update func", async () => {
+    await program.methods
+      .updateTime(openTime, period)
+      .accounts({
+        owner: owner.publicKey,
+        timeConfig: timeConfig,
+      })
+      .signers([owner])
+      .rpc()
+      .then(confirm);
+  });
+
   it("Errot Init Test", async () => {
     try {
       await program.methods
@@ -114,6 +137,7 @@ describe("blink start", () => {
         .accounts({
           creator: creator.publicKey,
           authority: auth,
+          timeConfig: timeConfig,
           blinkConfig: config,
           blinkState: blink,
           tokenMint: tokenMint,
@@ -136,6 +160,7 @@ describe("blink start", () => {
       .accounts({
         creator: creator.publicKey,
         authority: auth,
+        timeConfig: timeConfig,
         blinkConfig: config,
         blinkState: blink,
         tokenMint: tokenMint,
@@ -160,6 +185,7 @@ describe("blink start", () => {
         .accounts({
           creator: creator.publicKey,
           authority: auth,
+          timeConfig: timeConfig,
           blinkConfig: config,
           blinkState: blink,
           tokenMint: tokenMint,
@@ -194,7 +220,26 @@ describe("blink start", () => {
     }
   });
 
+  it("Errot submit func", async () => {
+    try {
+      await program.methods
+        .submit(index, answer)
+        .accounts({
+          user: user.publicKey,
+          submitState: submit,
+          blinkState: blink,
+        })
+        .signers([user])
+        .rpc()
+        .then(confirm);
+    } catch (error) {
+      console.log("\nError submit======");
+      console.log(error);
+    }
+  });
+
   it("submit func", async () => {
+    await sleep(60);
     await program.methods
       .submit(index, answer)
       .accounts({
@@ -246,11 +291,29 @@ describe("blink start", () => {
     }
   });
 
+  it("Errot close func", async () => {
+    try {
+      await program.methods
+        .close(index, answer)
+        .accounts({
+          owner: creator.publicKey,
+          blinkState: blink,
+        })
+        .signers([creator])
+        .rpc()
+        .then(confirm);
+    } catch (error) {
+      console.log("\nError close======");
+      console.log(error);
+    }
+  });
+
   it("close func", async () => {
+    await sleep(600);
     await program.methods
       .close(index, answer)
       .accounts({
-        owner: creator.publicKey,
+        payer: creator.publicKey,
         blinkState: blink,
       })
       .signers([creator])
@@ -267,7 +330,7 @@ describe("blink start", () => {
       await program.methods
         .close(index, answer)
         .accounts({
-          owner: creator.publicKey,
+          payer: creator.publicKey,
           blinkState: blink,
         })
         .signers([creator])
