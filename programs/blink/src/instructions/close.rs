@@ -1,17 +1,14 @@
 use crate::error::ErrorCode;
 use crate::state::*;
 use anchor_lang::prelude::*;
-#[cfg(feature = "open-time")]
 use anchor_lang::solana_program::clock;
 
 pub fn close(ctx: Context<Close>, index: u16, answer: u8) -> Result<()> {
     let blink_state = &mut ctx.accounts.blink_state.load_mut()?;
-    #[cfg(feature = "open-time")]
-    {
-        let block_timestamp = clock::Clock::get()?.unix_timestamp as u64;
-        if block_timestamp < blink_state.close_time {
-            return err!(ErrorCode::InvalidCloseTime);
-        }
+
+    let block_timestamp = clock::Clock::get()?.unix_timestamp as u64;
+    if block_timestamp < blink_state.close_time {
+        return err!(ErrorCode::InvalidCloseTime);
     }
 
     if blink_state.index != index {
@@ -48,8 +45,7 @@ pub fn close(ctx: Context<Close>, index: u16, answer: u8) -> Result<()> {
 #[derive(Accounts)]
 #[instruction(index: u16)]
 pub struct Close<'info> {
-    #[account(address = blink_state.load()?.creator)]
-    pub owner: Signer<'info>,
+    pub payer: Signer<'info>,
 
     #[account(mut,
         seeds = [

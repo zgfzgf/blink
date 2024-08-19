@@ -1,19 +1,17 @@
 use crate::{error::ErrorCode, state::*};
 use anchor_lang::prelude::*;
-#[cfg(feature = "open-time")]
 use anchor_lang::solana_program::clock;
 
 pub fn submit(ctx: Context<Submit>, index: u16, answer: u8) -> Result<()> {
     let blink_state = &mut ctx.accounts.blink_state.load_mut()?;
-    #[cfg(feature = "open-time")]
-    {
-        let block_timestamp = clock::Clock::get()?.unix_timestamp as u64;
-        if blink_state.open_time > block_timestamp {
-            return err!(ErrorCode::InvalidOpenTime);
-        } else if block_timestamp > blink_state.close_time {
-            return err!(ErrorCode::InvalidCloseTime);
-        }
+
+    let block_timestamp = clock::Clock::get()?.unix_timestamp as u64;
+    if blink_state.open_time > block_timestamp {
+        return err!(ErrorCode::InvalidOpenTime);
+    } else if block_timestamp > blink_state.close_time {
+        return err!(ErrorCode::InvalidCloseTime);
     }
+
     if blink_state.closed {
         return err!(ErrorCode::CloseAlready);
     }

@@ -82,20 +82,14 @@ pub struct Opts {
 
 #[derive(Debug, Parser)]
 pub enum BlinkCommands {
-    CreateConfig {
-        index: u16,
-        pic: String,
-        content: String,
-        option1: String,
-        option2: String,
-        option3: String,
-        option4: String,
+    CreateTime {
+        open_time: u64,
+        period: u64,
     },
     Initialize {
         index: u16,
         token_mint: Pubkey,
         amount: u64,
-        open_time: u64,
         pic: String,
         content: String,
         option1: String,
@@ -140,25 +134,8 @@ fn main() -> Result<()> {
 
     let opts = Opts::parse();
     match opts.command {
-        BlinkCommands::CreateConfig {
-            index,
-            pic,
-            content,
-            option1,
-            option2,
-            option3,
-            option4,
-        } => {
-            let create_config = create_config_instr(
-                &pool_config,
-                index,
-                pic,
-                content,
-                option1,
-                option2,
-                option3,
-                option4,
-            )?;
+        BlinkCommands::CreateTime { open_time, period } => {
+            let create_config = create_config_instr(&pool_config, open_time, period)?;
 
             let signers = vec![&payer];
             let recent_hash = rpc_client.get_latest_blockhash()?;
@@ -175,7 +152,6 @@ fn main() -> Result<()> {
             index,
             token_mint,
             amount,
-            open_time,
             pic,
             content,
             option1,
@@ -188,7 +164,6 @@ fn main() -> Result<()> {
                 index,
                 token_mint,
                 amount,
-                open_time,
                 pic,
                 content,
                 option1,

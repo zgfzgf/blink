@@ -13,13 +13,8 @@ use crate::{read_keypair_file, ClientConfig};
 #[allow(clippy::too_many_arguments)]
 pub fn create_config_instr(
     config: &ClientConfig,
-    index: u16,
-    pic: String,
-    content: String,
-    option1: String,
-    option2: String,
-    option3: String,
-    option4: String,
+    open_time: u64,
+    period: u64,
 ) -> Result<Vec<Instruction>> {
     let payer = read_keypair_file(&config.owner_path)?;
     let url = Cluster::Custom(config.http_url.clone(), config.ws_url.clone());
@@ -27,26 +22,16 @@ pub fn create_config_instr(
     let client = Client::new(url, Rc::new(payer));
     let program = client.program(config.blink_program)?;
 
-    let (blink_config_key, _bump) = Pubkey::find_program_address(
-        &[CONFIG_SEED.as_bytes(), &index.to_le_bytes()[..]],
-        &program.id(),
-    );
+    let (time_config_key, _bump) =
+        Pubkey::find_program_address(&[TIME_SEED.as_bytes()], &program.id());
     let instructions = program
         .request()
-        .accounts(blink_accounts::CreateBlinkConfig {
+        .accounts(blink_accounts::CreateTimeConfig {
             owner: program.payer(),
-            blink_config: blink_config_key,
+            time_config: time_config_key,
             system_program: system_program::id(),
         })
-        .args(blink_instructions::CreateConfig {
-            index,
-            pic,
-            content,
-            option1,
-            option2,
-            option3,
-            option4,
-        })
+        .args(blink_instructions::CreateTime { open_time, period })
         .instructions()?;
     Ok(instructions)
 }
@@ -57,7 +42,6 @@ pub fn initialize_instr(
     index: u16,
     token_mint: Pubkey,
     amount: u64,
-    open_time: u64,
     pic: String,
     content: String,
     option1: String,
@@ -72,11 +56,14 @@ pub fn initialize_instr(
     let client = Client::new(url, Rc::new(payer));
     let program = client.program(config.blink_program)?;
 
-    let (blink_config_key, _bump) = Pubkey::find_program_address(
+    let (time_config_key, _bump) =
+        Pubkey::find_program_address(&[TIME_SEED.as_bytes()], &program.id());
+    let (blink_config_key, _bump1) = Pubkey::find_program_address(
         &[CONFIG_SEED.as_bytes(), &index.to_le_bytes()[..]],
         &program.id(),
     );
-    let (authority, __bump) = Pubkey::find_program_address(&[AUTH_SEED.as_bytes()], &program.id());
+
+    let (authority, _bump2) = Pubkey::find_program_address(&[AUTH_SEED.as_bytes()], &program.id());
 
     let (blink_state_key, _bump) = Pubkey::find_program_address(
         &[BLINK_SEED.as_bytes(), &index.to_le_bytes()[..]],
@@ -92,6 +79,7 @@ pub fn initialize_instr(
         .accounts(blink_accounts::Initialize {
             creator: creator.pubkey(),
             authority,
+            time_config: time_config_key,
             blink_config: blink_config_key,
             blink_state: blink_state_key,
             token_mint,
@@ -104,7 +92,6 @@ pub fn initialize_instr(
         .args(blink_instructions::Initialize {
             index,
             amount,
-            open_time,
             pic,
             content,
             option1,
@@ -169,7 +156,7 @@ pub fn close_instr(config: &ClientConfig, index: u16, answer: u8) -> Result<Vec<
     let instructions = program
         .request()
         .accounts(blink_accounts::Close {
-            owner: creator.pubkey(),
+            payer: creator.pubkey(),
             blink_state: blink_state_key,
             //event_authority: event_key,
             //program: program.id(),

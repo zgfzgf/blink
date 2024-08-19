@@ -9,7 +9,6 @@ crate-type = ["cdylib", "lib"]
 name = "blink"
 
 [features]
-default = []
 open-time = []
 cpi = ["no-entrypoint"]
 no-entrypoint = []

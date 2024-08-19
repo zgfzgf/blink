@@ -1,10 +1,6 @@
-#[cfg(feature = "open-time")]
-use crate::error::ErrorCode;
 use crate::state::*;
 
 use anchor_lang::prelude::*;
-#[cfg(feature = "open-time")]
-use anchor_lang::solana_program::clock;
 use anchor_spl::{
     associated_token::AssociatedToken,
     token_interface::{transfer_checked, Mint, TokenAccount, TokenInterface, TransferChecked},
@@ -17,7 +13,6 @@ pub fn initialize(
     ctx: Context<Initialize>,
     index: u16,
     amount: u64,
-    #[cfg(feature = "open-time")] open_time: u64,
     pic: String,
     content: String,
     option1: String,
@@ -40,7 +35,7 @@ pub fn initialize(
     transfer_checked(cpi_context, amount, ctx.accounts.token_mint.decimals)?;
 
     let blink_config = ctx.accounts.blink_config.deref_mut();
-    blink_config.owner = ctx.accounts.creator.key();
+    blink_config.creator = ctx.accounts.creator.key();
     blink_config.index = index;
     blink_config.pic = pic;
     blink_config.content = content;
@@ -64,21 +59,11 @@ pub fn initialize(
     blink_state.right4 = 0;
     blink_state.amount = amount;
     blink_state.reward = 0;
+    blink_state.open_time = ctx.accounts.time_config.open_time;
+    blink_state.close_time = ctx.accounts.time_config.close_time;
 
     blink_state.auth_bump = ctx.bumps.authority;
     blink_state.bump = ctx.bumps.blink_state;
-
-    #[cfg(feature = "open-time")]
-    {
-        let block_timestamp = clock::Clock::get()?.unix_timestamp as u64;
-        if open_time < block_timestamp {
-            return err!(ErrorCode::InvalidOpenTime);
-        }
-        let close_time = open_time.checked_add(PERIOD).unwrap();
-
-        blink_state.open_time = block_timestamp;
-        blink_state.close_time = close_time;
-    }
 
     emit!(InitializeEvent {
         index,
@@ -107,6 +92,8 @@ pub struct Initialize<'info> {
         bump,
     )]
     pub authority: UncheckedAccount<'info>,
+
+    pub time_config: Account<'info, TimeConfig>,
 
     #[account(
         init,
